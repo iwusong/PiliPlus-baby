@@ -19,6 +19,12 @@ subprojects {
 }
 
 subprojects {
+    if (project.name != "app") {
+        pluginManager.apply("org.jetbrains.kotlin.android")
+    }
+}
+
+subprojects {
     afterEvaluate {
         if (project.extensions.findByName("android") != null) {
             val androidExtension =

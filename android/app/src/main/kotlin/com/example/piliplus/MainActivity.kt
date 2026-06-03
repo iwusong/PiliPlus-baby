@@ -8,6 +8,37 @@ import android.view.WindowManager.LayoutParams
 import com.ryanheise.audioservice.AudioServiceActivity
 
 class MainActivity : AudioServiceActivity() {
+    private lateinit var methodChannel: MethodChannel
+
+    /// BLE 远程锁屏: GATT Server 插件, 在 FlutterEngine 初始化时注册
+    private var gattServerPlugin: GattServerPlugin? = null
+
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+
+        // 初始化 BLE GATT Server 插件, 注册 MethodChannel + EventChannel
+        gattServerPlugin = GattServerPlugin(this, flutterEngine)
+
+        methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "PiliPlus")
+        methodChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "SystemChrome.setEnabledSystemUIMode" -> {
+                    SystemChrome.onMethodCall(
+                        this, "SystemChrome.setEnabledSystemUIMode", call.argument("arguments")
+                    )
+                }
+
+                "SystemChrome.setEnabledSystemUIOverlays" -> {
+                    SystemChrome.onMethodCall(
+                        this, "SystemChrome.setEnabledSystemUIOverlays", call.argument("arguments")
+                    )
+                }
+
+                else -> result.notImplemented()
+            }
+        }
+    }
+
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         if (AndroidHelper.isFoldable) {

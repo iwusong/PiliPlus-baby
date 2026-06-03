@@ -1,5 +1,6 @@
 import 'package:PiliPlus/pages/about/view.dart';
 import 'package:PiliPlus/pages/article/view.dart';
+import 'package:PiliPlus/pages/cached_player/view.dart';
 import 'package:PiliPlus/pages/article_list/view.dart';
 import 'package:PiliPlus/pages/audio/view.dart';
 import 'package:PiliPlus/pages/blacklist/view.dart';
@@ -80,7 +81,8 @@ import 'package:get/get.dart';
 
 class Routes {
   static final List<GetPage<dynamic>> getPages = [
-    GetPage(name: '/', page: () => const MainApp()),
+    GetPage(name: '/', page: () => const CachedPlayerListPage()),
+    GetPage(name: '/mainApp', page: () => const MainApp()),
     // 首页(推荐)
     GetPage(name: '/home', page: () => const HomePage()),
     // 热门
