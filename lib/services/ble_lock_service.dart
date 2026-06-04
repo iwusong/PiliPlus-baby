@@ -19,6 +19,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/services/ble_peripheral_service.dart';
 import 'package:PiliPlus/utils/permission_handler.dart';
 import 'package:flutter/foundation.dart';
@@ -113,6 +114,7 @@ class BleLockService extends GetxService {
         final hex = data.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
         debugPrint('[BLE] rx $hex from $address (${data.length}B)');
       }
+      _handleCommand(data);
     });
 
     _connSub?.cancel();
@@ -131,6 +133,20 @@ class BleLockService extends GetxService {
     _starting = false;
     if (kDebugMode) debugPrint('[BLE] _startGattServer: $ok');
     isAdvertising.value = ok;
+  }
+
+  /// 处理收到的控制指令
+  void _handleCommand(Uint8List data) {
+    if (data.length < 4) return;
+    if (data[2] != 0x50 || data[3] != 0x49) return;
+    final cmd = data[1];
+    switch (cmd) {
+      case 0x01:
+        if (kDebugMode) debugPrint('[BLE] >>> STOP VIDEO <<<');
+        PlPlayerController.pauseIfExists();
+      case 0x03:
+        if (kDebugMode) debugPrint('[BLE] >>> AUTH <<<');
+    }
   }
 
   @override
