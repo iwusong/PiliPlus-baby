@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 
@@ -13,10 +14,17 @@ class BlePeripheralService {
 
   BlePeripheralService._() {
     _cmdEvent.receiveBroadcastStream().listen((raw) {
-      if (raw is Uint8List) {
-        _onCommand.add(raw);
-      } else if (raw is List<int>) {
-        _onCommand.add(Uint8List.fromList(raw));
+      if (raw is Map) {
+        final value = raw['value'];
+        final address = raw['address'] as String? ?? '';
+        final data = value is Uint8List
+            ? value
+            : value is List<int>
+                ? Uint8List.fromList(value)
+                : null;
+        if (data != null) {
+          _onCommand.add({'address': address, 'value': data});
+        }
       }
     });
     _connEvent.receiveBroadcastStream().listen((raw) {
@@ -31,11 +39,12 @@ class BlePeripheralService {
     });
   }
 
-  final _onCommand = StreamController<Uint8List>.broadcast();
+  final _onCommand = StreamController<Map<String, dynamic>>.broadcast();
   final _onConnection = StreamController<Map<String, dynamic>>.broadcast();
   final _onAdapter = StreamController<String>.broadcast();
 
-  Stream<Uint8List> get commandStream => _onCommand.stream;
+  /// 收到的 Characteristic 写入: {"address": "MAC", "value": Uint8List}
+  Stream<Map<String, dynamic>> get commandStream => _onCommand.stream;
   Stream<Map<String, dynamic>> get connectionStream => _onConnection.stream;
 
   /// 蓝牙开关状态变化流: "on" / "off" / "turningOn" / "turningOff"

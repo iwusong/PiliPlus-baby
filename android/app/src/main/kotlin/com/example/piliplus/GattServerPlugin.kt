@@ -237,10 +237,17 @@ class GattServerPlugin(
 
     private val gattCallback = object : BluetoothGattServerCallback() {
         override fun onConnectionStateChange(dev: BluetoothDevice, status: Int, newState: Int) {
-            val name = if (newState == BluetoothProfile.STATE_CONNECTED) "CONNECTED" else "DISCONNECTED"
-            Log.d(TAG, "onConnectionStateChange: $name dev=${dev.address} status=$status")
+            val stateName = if (newState == BluetoothProfile.STATE_CONNECTED) "CONNECTED" else "DISCONNECTED"
+            val deviceName = dev.name ?: dev.address
+            Log.d(TAG, "onConnectionStateChange: $stateName dev=$deviceName ($dev.address) status=$status")
             val connected = newState == BluetoothProfile.STATE_CONNECTED
-            mainHandler.post { connSink?.success(mapOf("device" to dev.address, "connected" to connected)) }
+            mainHandler.post {
+                connSink?.success(mapOf(
+                    "device" to dev.address,
+                    "name" to (dev.name ?: dev.address),
+                    "connected" to connected
+                ))
+            }
         }
 
         override fun onCharacteristicWriteRequest(
@@ -248,9 +255,12 @@ class GattServerPlugin(
             preparedWrite: Boolean, responseNeeded: Boolean, offset: Int, value: ByteArray
         ) {
             val hex = value.joinToString("") { "%02x".format(it) }
-            Log.d(TAG, "onWriteRequest: dev=${dev.address} uuid=${ch.uuid} value=0x$hex responseNeeded=$responseNeeded")
+            val deviceName = dev.name ?: dev.address
+            Log.d(TAG, "onWriteRequest: dev=$deviceName uuid=${ch.uuid} value=0x$hex responseNeeded=$responseNeeded")
             if (ch.uuid == CHAR_UUID) {
-                mainHandler.post { cmdSink?.success(value) }
+                mainHandler.post {
+                    cmdSink?.success(mapOf("address" to dev.address, "value" to value))
+                }
             }
             if (responseNeeded) {
                 gattServer?.sendResponse(dev, requestId, BluetoothGatt.GATT_SUCCESS, 0, null)
