@@ -141,11 +141,15 @@ class BleLockService extends GetxService {
     if (data[2] != 0x50 || data[3] != 0x49) return;
     final cmd = data[1];
     switch (cmd) {
+      case 0x00:
+        if (kDebugMode) debugPrint('[BLE] >>> BATTERY OUT <<<');
+        Get.offAllNamed('/batteryOut');
       case 0x01:
         if (kDebugMode) debugPrint('[BLE] >>> STOP VIDEO <<<');
         PlPlayerController.pauseIfExists();
-      case 0x03:
-        if (kDebugMode) debugPrint('[BLE] >>> AUTH <<<');
+      case 0x02:
+        if (kDebugMode) debugPrint('[BLE] >>> LOCK SCREEN <<<');
+        _peripheral.lockScreen();
     }
   }
 

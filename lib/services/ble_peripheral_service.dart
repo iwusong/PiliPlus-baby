@@ -67,4 +67,8 @@ class BlePeripheralService {
 
   Future<bool> stop() async =>
       await _methodChannel.invokeMethod<bool>('stop') ?? false;
+
+  /// 系统锁屏 (需设备管理员权限)
+  Future<bool> lockScreen() async =>
+      await _methodChannel.invokeMethod<bool>('lockScreen') ?? false;
 }

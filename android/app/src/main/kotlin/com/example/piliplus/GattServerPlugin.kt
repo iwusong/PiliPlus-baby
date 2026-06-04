@@ -8,6 +8,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.app.admin.DevicePolicyManager
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelUuid
@@ -110,6 +111,7 @@ class GattServerPlugin(
                 }
                 "start" -> start(call.argument("name"), result)
                 "stop" -> stop(result)
+                "lockScreen" -> lockScreen(result)
                 "isAdvertising" -> result.success(isAdv)
                 else -> result.notImplemented()
             }
@@ -212,6 +214,19 @@ class GattServerPlugin(
         } catch (e: Exception) {
             Log.e(TAG, "start failed: ${e.message}", e)
             result.error("START_FAILED", e.message, null)
+        }
+    }
+
+    /// 调用系统锁屏, 需要设备管理员权限
+    private fun lockScreen(result: MethodChannel.Result) {
+        Log.d(TAG, "lockScreen()")
+        try {
+            val dpm = appCtx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+            dpm.lockNow()
+            result.success(true)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "lockScreen failed: not device admin", e)
+            result.error("NOT_ADMIN", "需先在设置中激活设备管理器", null)
         }
     }
 
