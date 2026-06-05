@@ -275,6 +275,7 @@ flutter:
     - path: assets/images/live/
     - path: assets/images/paycoins/
     - path: assets/shaders/
+    - path: assets/audio/
 
   fonts:
     - family: digital_id_num
