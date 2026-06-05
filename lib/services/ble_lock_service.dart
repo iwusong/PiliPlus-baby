@@ -24,6 +24,7 @@ import 'package:PiliPlus/services/ble_peripheral_service.dart';
 import 'package:PiliPlus/utils/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'package:permission_handler_platform_interface/permission_handler_platform_interface.dart';
 
 class BleLockService extends GetxService {
   static BleLockService get instance => Get.find();
@@ -129,7 +130,7 @@ class BleLockService extends GetxService {
       connectedDevice.value = name;
     });
 
-    final ok = await _peripheral.start(name: 'PiliPlus');
+    final ok = await _peripheral.start(name: 'dudutv');
     _starting = false;
     if (kDebugMode) debugPrint('[BLE] _startGattServer: $ok');
     isAdvertising.value = ok;
@@ -144,12 +145,15 @@ class BleLockService extends GetxService {
       case 0x00:
         if (kDebugMode) debugPrint('[BLE] >>> BATTERY OUT <<<');
         Get.offAllNamed('/batteryOut');
+        break;
       case 0x01:
         if (kDebugMode) debugPrint('[BLE] >>> STOP VIDEO <<<');
         PlPlayerController.pauseIfExists();
+        break;
       case 0x02:
         if (kDebugMode) debugPrint('[BLE] >>> LOCK SCREEN <<<');
         _peripheral.lockScreen();
+        break;
     }
   }
 
