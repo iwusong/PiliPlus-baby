@@ -4,7 +4,7 @@
 /// ```
 /// 远程设备 (nRF Connect / 遥控App)
 ///   │ 1. 扫描 BLE 广播
-///   │ 2. 看到设备名 "PiliPlus" + Service UUID 0000abcd
+///   │ 2. 看到设备名 "dudutv-BrandModel" + Service UUID 0000abcd
 ///   │ 3. 连接 → 写入 Characteristic 0000abce
 ///   ▼
 /// 本机 (Android GATT Server)
@@ -17,14 +17,15 @@
 /// App 启动 → onInit → 检查权限/蓝牙 → 自动开启 GATT Server + 广播
 /// App 退出 → onClose → 停止广播, 释放资源
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/services/ble_peripheral_service.dart';
 import 'package:PiliPlus/utils/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
-import 'package:permission_handler_platform_interface/permission_handler_platform_interface.dart';
 
 class BleLockService extends GetxService {
   static BleLockService get instance => Get.find();
@@ -40,6 +41,7 @@ class BleLockService extends GetxService {
   StreamSubscription? _connSub;
   StreamSubscription? _adapterSub;
   bool _starting = false;
+  String _advName = 'dudutv';
 
   @override
   void onInit() {
@@ -52,6 +54,8 @@ class BleLockService extends GetxService {
     isSupported.value = await _peripheral.isSupported();
     if (kDebugMode) debugPrint('[BLE] isSupported: ${isSupported.value}');
     if (!isSupported.value) return;
+
+    await _fetchDeviceName();
 
     final hasPermission = await _requestPermissions();
     if (kDebugMode) debugPrint('[BLE] permissions granted: $hasPermission');
@@ -101,6 +105,24 @@ class BleLockService extends GetxService {
     }
   }
 
+  Future<void> _fetchDeviceName() async {
+    try {
+      if (Platform.isAndroid) {
+        final info = await DeviceInfoPlugin().androidInfo;
+        final brand = info.brand.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+        final model = info.model.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+        _advName = 'dudutv$brand$model';
+      } else {
+        final info = await DeviceInfoPlugin().iosInfo;
+        final model = info.model.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+        _advName = 'dudutv$model';
+      }
+      if (kDebugMode) debugPrint('[BLE] advName: $_advName');
+    } catch (e) {
+      if (kDebugMode) debugPrint('[BLE] fetchDeviceName failed: $e');
+    }
+  }
+
   Future<void> _startGattServer() async {
     if (_starting || isAdvertising.value) return;
     _starting = true;
@@ -130,7 +152,7 @@ class BleLockService extends GetxService {
       connectedDevice.value = name;
     });
 
-    final ok = await _peripheral.start(name: 'dudutv');
+    final ok = await _peripheral.start(name: _advName);
     _starting = false;
     if (kDebugMode) debugPrint('[BLE] _startGattServer: $ok');
     isAdvertising.value = ok;
