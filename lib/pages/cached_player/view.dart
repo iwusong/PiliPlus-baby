@@ -21,6 +21,21 @@ class CachedPlayerListPage extends StatefulWidget {
 
 class _CachedPlayerListPageState extends State<CachedPlayerListPage> {
   final _controller = Get.put(CachedPlayerListController());
+  int _homeTapCount = 0;
+  DateTime _lastHomeTap = DateTime(2000);
+
+  void _onHomeTap() {
+    final now = DateTime.now();
+    if (now.difference(_lastHomeTap) > const Duration(seconds: 1)) {
+      _homeTapCount = 0;
+    }
+    _lastHomeTap = now;
+    _homeTapCount++;
+    if (_homeTapCount >= 5) {
+      _homeTapCount = 0;
+      Get.offNamed('/mainApp');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +45,7 @@ class _CachedPlayerListPageState extends State<CachedPlayerListPage> {
         actions: [
           IconButton(
             tooltip: '回到主页',
-            onPressed: () => Get.offNamed('/mainApp'),
+            onPressed: _onHomeTap,
             icon: const Icon(Icons.home_outlined),
           ),
           const SizedBox(width: 6),
