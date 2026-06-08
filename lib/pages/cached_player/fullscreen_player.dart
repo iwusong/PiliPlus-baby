@@ -31,11 +31,14 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
   VideoController? _videoController;
   final _showControls = true.obs;
   final _showSpeedPanel = false.obs;
+  final _controlsLock = false.obs;
+  final _lockIconVisible = true.obs;
 
   final RxDouble _brightnessValue = 0.0.obs;
   final RxBool _brightnessIndicator = false.obs;
   Timer? _brightnessTimer;
 
+  int? _pointerId;
   Offset? _initialFocalPoint;
   _SideGesture? _sideGesture;
 
@@ -147,15 +150,30 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
     _hideTimer?.cancel();
     _showControls.value = true;
     _showSpeedPanel.value = false;
+    _lockIconVisible.value = true;
     _hideTimer = Timer(_hideAfter, () {
       if (mounted && !_isSliderDragging) {
         _showControls.value = false;
         _showSpeedPanel.value = false;
+        _lockIconVisible.value = false;
       }
     });
   }
 
   void _toggleControls() {
+    if (_controlsLock.value) {
+      if (_lockIconVisible.value) {
+        _lockIconVisible.value = false;
+        _hideTimer?.cancel();
+      } else {
+        _lockIconVisible.value = true;
+        _hideTimer?.cancel();
+        _hideTimer = Timer(_hideAfter, () {
+          if (mounted) _lockIconVisible.value = false;
+        });
+      }
+      return;
+    }
     if (_showControls.value) {
       _showControls.value = false;
       _showSpeedPanel.value = false;
@@ -195,44 +213,47 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
     _scheduleHide();
   }
 
-  void _onPanStart(DragStartDetails details) {
-    if (!_showControls.value) {
-      _sideGesture = null;
-      _initialFocalPoint = null;
-      return;
-    }
+  void _onPointerDown(PointerDownEvent event) {
+    if (_controlsLock.value) return;
+    _pointerId = event.pointer;
     _sideGesture = null;
-    _initialFocalPoint = details.localPosition;
+    _initialFocalPoint = event.localPosition;
     _hideTimer?.cancel();
   }
 
-  void _onPanUpdate(DragUpdateDetails details) {
-    if (_initialFocalPoint == null) return;
+  void _onPointerMove(PointerMoveEvent event) {
+    if (_pointerId != event.pointer || _initialFocalPoint == null) return;
     final size = MediaQuery.sizeOf(context);
     if (size.width <= 0 || size.height <= 0) return;
 
+    final pos = event.localPosition;
+    final delta = pos - _initialFocalPoint!;
+
     if (_sideGesture == null) {
-      final cumulativeDelta = details.localPosition - _initialFocalPoint!;
-      if (cumulativeDelta.distanceSquared < 4) return;
-      final dx = cumulativeDelta.dx.abs();
-      final dy = cumulativeDelta.dy.abs();
+      if (delta.distanceSquared < 4) return;
+      final dx = delta.dx.abs();
+      final dy = delta.dy.abs();
       if (dy <= 3 * dx) return;
 
       final sectionWidth = size.width / 3;
-      if (details.localPosition.dx < sectionWidth) {
+      if (pos.dx < sectionWidth) {
         _sideGesture = .left;
-      } else if (details.localPosition.dx >= sectionWidth * 2) {
+      } else if (pos.dx >= sectionWidth * 2) {
         _sideGesture = .right;
       } else {
         _sideGesture = null;
         return;
       }
+      _initialFocalPoint = pos;
     }
+
+    final moveDelta = event.localPosition - _initialFocalPoint!;
 
     if (_sideGesture == .left) {
       final level = size.height * 3;
-      final next = _brightnessValue.value - details.delta.dy / level;
+      final next = _brightnessValue.value - moveDelta.dy / level;
       _setBrightness(next);
+      _initialFocalPoint = event.localPosition;
       return;
     }
 
@@ -240,24 +261,28 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
       final maxV = PlPlayerController.maxVolume;
       final level = size.height * 0.5;
       final next = clampDouble(
-        _player.volume.value - details.delta.dy / level,
+        _player.volume.value - moveDelta.dy / level,
         0.0,
         maxV,
       );
       _player.setVolume(next);
+      _initialFocalPoint = event.localPosition;
     }
   }
 
-  void _onPanEnd(DragEndDetails details) {
+  void _onPointerUp(PointerUpEvent event) {
+    if (_pointerId != event.pointer) return;
+    _pointerId = null;
     _initialFocalPoint = null;
     _sideGesture = null;
     if (_showControls.value) _scheduleHide();
   }
 
-  void _onPanCancel() {
+  void _onPointerCancel(PointerCancelEvent event) {
+    if (_pointerId == null || _pointerId != event.pointer) return;
+    _pointerId = null;
     _initialFocalPoint = null;
     _sideGesture = null;
-    if (_showControls.value) _scheduleHide();
   }
 
   Future<void> _onBack() async {
@@ -297,12 +322,13 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
         backgroundColor: Colors.black,
         body: LayoutBuilder(
           builder: (context, constraints) {
-            return GestureDetector(
+            return Listener(
+              onPointerDown: _onPointerDown,
+              onPointerMove: _onPointerMove,
+              onPointerUp: _onPointerUp,
+              onPointerCancel: _onPointerCancel,
+              child: GestureDetector(
               onTap: _toggleControls,
-              onPanStart: _onPanStart,
-              onPanUpdate: _onPanUpdate,
-              onPanEnd: _onPanEnd,
-              onPanCancel: _onPanCancel,
               behavior: HitTestBehavior.opaque,
               child: Stack(
                 children: [
@@ -334,8 +360,10 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
                   ),
                   _buildBrightnessIndicator(),
                   _buildVolumeIndicator(),
+                  _buildLockButton(),
                 ],
               ),
+            ),
             );
           },
         ),
@@ -419,7 +447,8 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
         child: Stack(
           children: [
             Positioned.fill(
-              child: Center(
+              child: Align(
+                alignment: const Alignment(0, 0.45),
                 child: SingleChildScrollView(
                   physics: const NeverScrollableScrollPhysics(),
                   child: _buildCenterControls(),
@@ -544,6 +573,30 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
           const SizedBox(height: 4),
           Row(
             children: [
+
+              Obx(() {
+                final v = _brightnessValue.value;
+                final icon = v < 1.0 / 3.0
+                    ? Icons.brightness_low
+                    : v < 2.0 / 3.0
+                        ? Icons.brightness_medium
+                        : Icons.brightness_high;
+                return Row(
+                  mainAxisSize: .min,
+                  children: [
+                    Icon(icon, color: Colors.white70, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${(v * 100).round()}%',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                );
+              }),
+              const SizedBox(width: 16),
               Obx(() {
                 final speed = _player.playbackSpeed;
                 return _controlChip(
@@ -793,6 +846,53 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
         ),
       ),
     );
+  }
+
+  void _toggleLock() {
+    _controlsLock.value = !_controlsLock.value;
+    if (_controlsLock.value) {
+      _showControls.value = false;
+      _lockIconVisible.value = true;
+      _hideTimer?.cancel();
+      _hideTimer = Timer(_hideAfter, () {
+        if (mounted) _lockIconVisible.value = false;
+      });
+    } else {
+      _lockIconVisible.value = false;
+    }
+  }
+
+  Widget _buildLockButton() {
+    return Obx(() {
+      if (!_lockIconVisible.value && !_showControls.value) return const SizedBox.shrink();
+      return Positioned(
+        right: 12,
+        top: 0,
+        bottom: 0,
+        child: Center(
+          child: Obx(() {
+            final locked = _controlsLock.value;
+            return GestureDetector(
+              onTap: _toggleLock,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: locked
+                      ? const Color(0xAAFFFFFF)
+                      : const Color(0x44000000),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  locked ? Icons.lock : Icons.lock_open,
+                  color: locked ? Colors.black87 : Colors.white70,
+                  size: 20,
+                ),
+              ),
+            );
+          }),
+        ),
+      );
+    });
   }
 
   String _formatDuration(Duration d) {
