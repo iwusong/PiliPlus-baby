@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:PiliPlus/common/widgets/progress_bar/audio_video_progress_bar.dart';
 import 'package:PiliPlus/models_new/download/bili_download_entry_info.dart';
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/data_source.dart';
@@ -25,7 +26,7 @@ class CachedPlayerFullscreenPage extends StatefulWidget {
 
 class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage> {
   static const _speedOptions = <double>[0.5, 1.0, 1.25, 1.5, 2.0];
-  static const _hideAfter = Duration(seconds: 4);
+  static const _hideAfter = Duration(seconds: 2);
 
   late final PlPlayerController _player;
   VideoController? _videoController;
@@ -43,9 +44,9 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
   _SideGesture? _sideGesture;
 
   Timer? _hideTimer;
-  bool _isSliderDragging = false;
-  double _tempSliderValue = 0;
   StreamSubscription<double>? _volumeListener;
+  Timer? _seekCooldown;
+  Timer? _sliderSeekDebounce;
 
   @override
   void initState() {
@@ -152,7 +153,7 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
     _showSpeedPanel.value = false;
     _lockIconVisible.value = true;
     _hideTimer = Timer(_hideAfter, () {
-      if (mounted && !_isSliderDragging) {
+      if (mounted) {
         _showControls.value = false;
         _showSpeedPanel.value = false;
         _lockIconVisible.value = false;
@@ -177,6 +178,7 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
     if (_showControls.value) {
       _showControls.value = false;
       _showSpeedPanel.value = false;
+      _lockIconVisible.value = false;
       _hideTimer?.cancel();
     } else {
       _scheduleHide();
@@ -192,24 +194,20 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
     _scheduleHide();
   }
 
-  void _onSpeedTap(double speed) {
-    _player.setPlaybackSpeed(speed);
+  void _doSeek(Duration target, {bool isSeek = false}) {
+    if (_seekCooldown?.isActive == true) return;
+    _sliderSeekDebounce?.cancel();
+    _player.seekTo(target, isSeek: isSeek);
+    if (_player.playerStatus.value.isPlaying) {
+      _player.play();
+    }
+    _seekCooldown?.cancel();
+    _seekCooldown = Timer(const Duration(milliseconds: 200), () {});
     _scheduleHide();
   }
 
-  void _onSliderStart(double value) {
-    _isSliderDragging = true;
-    _tempSliderValue = value;
-    _hideTimer?.cancel();
-  }
-
-  void _onSliderChange(double value) {
-    _tempSliderValue = value;
-  }
-
-  void _onSliderEnd(double value) {
-    _isSliderDragging = false;
-    _player.seekTo(Duration(milliseconds: value.toInt()));
+  void _onSpeedTap(double speed) {
+    _player.setPlaybackSpeed(speed);
     _scheduleHide();
   }
 
@@ -302,6 +300,8 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
     _brightnessTimer?.cancel();
     _volumeListener?.cancel();
     _volumeListener = null;
+    _seekCooldown?.cancel();
+    _sliderSeekDebounce?.cancel();
     if (PlatformUtils.isMobile) {
       try {
         FlutterVolumeController.removeListener();
@@ -492,10 +492,7 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
             icon: Icons.replay_10,
             onTap: () {
               final pos = _player.position - const Duration(seconds: 10);
-              _player.seekTo(
-                pos < Duration.zero ? Duration.zero : pos,
-              );
-              _scheduleHide();
+              _doSeek(pos < Duration.zero ? Duration.zero : pos);
             },
           ),
           const SizedBox(width: 24),
@@ -508,15 +505,12 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
           _roundIcon(
             icon: Icons.forward_10,
             onTap: () {
-              final pos =
-                  _player.position + const Duration(seconds: 10);
+              final pos = _player.position + const Duration(seconds: 10);
               final maxMs = _player.duration.value.inMilliseconds;
-              if (maxMs > 0 && pos.inMilliseconds > maxMs) {
-                _player.seekTo(Duration(milliseconds: maxMs));
-              } else {
-                _player.seekTo(pos);
-              }
-              _scheduleHide();
+              final target = maxMs > 0 && pos.inMilliseconds > maxMs
+                  ? Duration(milliseconds: maxMs)
+                  : pos;
+              _doSeek(target);
             },
           ),
         ],
@@ -553,15 +547,14 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
           Row(
             children: [
               Obx(() {
-                final seconds = _isSliderDragging
-                    ? _tempSliderValue ~/ 1000
-                    : _player.positionSeconds.value;
                 return Text(
-                  _formatDuration(Duration(seconds: seconds)),
+                  _formatDuration(
+                    Duration(seconds: _player.positionSeconds.value),
+                  ),
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                 );
               }),
-              Expanded(child: _buildProgressSlider()),
+              Expanded(child: _buildProgressBar()),
               Obx(() {
                 return Text(
                   _formatDuration(_player.duration.value),
@@ -643,44 +636,48 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
     );
   }
 
-  Widget _buildProgressSlider() {
-    return Obx(() {
-      final duration = _player.duration.value;
-      final maxMs = duration.inMilliseconds.toDouble();
-      if (maxMs <= 0) {
-        return const SliderTheme(
-          data: SliderThemeData(
-            trackHeight: 2,
-            disabledThumbColor: Colors.white,
-            disabledActiveTrackColor: Colors.white,
-            disabledInactiveTrackColor: Colors.white24,
-            overlayShape: RoundSliderOverlayShape(overlayRadius: 0),
-          ),
-          child: Slider(value: 0, max: 1, onChanged: null),
-        );
+  void _onProgressDragStart(ThumbDragDetails details) {
+    _hideTimer?.cancel();
+    _seekCooldown?.cancel();
+    _sliderSeekDebounce?.cancel();
+    _player.onChangedSliderStart(details.timeStamp);
+  }
+
+  void _onProgressDragUpdate(ThumbDragDetails details) {
+    _player.onUpdatedSliderProgress(details.timeStamp);
+  }
+
+  void _onProgressSeek(Duration duration) {
+    _player
+      ..onChangedSliderEnd()
+      ..onChangedSlider(duration.inSeconds);
+    _sliderSeekDebounce?.cancel();
+    _sliderSeekDebounce = Timer(const Duration(milliseconds: 100), () {
+      _player.seekTo(duration, isSeek: false);
+      if (_player.playerStatus.value.isPlaying) {
+        _player.play();
       }
-      final value = _isSliderDragging
-          ? _tempSliderValue
-          : (_player.positionSeconds.value * 1000)
-              .toDouble()
-              .clamp(0.0, maxMs);
-      return SliderTheme(
-        data: const SliderThemeData(
-          trackHeight: 2,
-          activeTrackColor: Colors.white,
-          inactiveTrackColor: Colors.white24,
-          thumbColor: Colors.white,
-          overlayColor: Color(0x33FFFFFF),
-          overlayShape: RoundSliderOverlayShape(overlayRadius: 14),
-          thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
-        ),
-        child: Slider(
-          value: value,
-          max: maxMs,
-          onChangeStart: _onSliderStart,
-          onChanged: _onSliderChange,
-          onChangeEnd: _onSliderEnd,
-        ),
+      _scheduleHide();
+    });
+  }
+
+  Widget _buildProgressBar() {
+    return Obx(() {
+      return ProgressBar(
+        progress: Duration(seconds: _player.sliderPositionSeconds.value),
+        buffered: Duration(seconds: _player.bufferedSeconds.value),
+        total: Duration(seconds: _player.duration.value.inSeconds),
+        progressBarColor: Colors.white,
+        baseBarColor: const Color(0x33FFFFFF),
+        bufferedBarColor: Colors.white54,
+        thumbColor: Colors.white,
+        thumbGlowColor: Colors.white24,
+        barHeight: 3.5,
+        thumbRadius: 7,
+        thumbGlowRadius: 25,
+        onDragStart: _onProgressDragStart,
+        onDragUpdate: _onProgressDragUpdate,
+        onSeek: _onProgressSeek,
       );
     });
   }
@@ -864,32 +861,32 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
 
   Widget _buildLockButton() {
     return Obx(() {
-      if (!_lockIconVisible.value && !_showControls.value) return const SizedBox.shrink();
+      if (!_lockIconVisible.value && !_showControls.value) {
+        return const SizedBox.shrink();
+      }
+      final locked = _controlsLock.value;
       return Positioned(
         right: 12,
         top: 0,
         bottom: 0,
         child: Center(
-          child: Obx(() {
-            final locked = _controlsLock.value;
-            return GestureDetector(
-              onTap: _toggleLock,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: locked
-                      ? const Color(0xAAFFFFFF)
-                      : const Color(0x44000000),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Icon(
-                  locked ? Icons.lock : Icons.lock_open,
-                  color: locked ? Colors.black87 : Colors.white70,
-                  size: 20,
-                ),
+          child: GestureDetector(
+            onTap: _toggleLock,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: locked
+                    ? const Color(0xAAFFFFFF)
+                    : const Color(0x44000000),
+                borderRadius: BorderRadius.circular(20),
               ),
-            );
-          }),
+              child: Icon(
+                locked ? Icons.lock : Icons.lock_open,
+                color: locked ? Colors.black87 : Colors.white70,
+                size: 20,
+              ),
+            ),
+          ),
         ),
       );
     });
