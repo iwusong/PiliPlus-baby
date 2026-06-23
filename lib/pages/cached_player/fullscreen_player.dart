@@ -34,8 +34,6 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
   final _showSpeedPanel = false.obs;
   final _lockIconVisible = true.obs;
 
-  final RxDouble _brightnessValue = 0.0.obs;
-
   int? _pointerId;
   Offset? _initialFocalPoint;
   _SideGesture? _sideGesture;
@@ -119,13 +117,13 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
         ? ScreenBrightnessPlatform.instance.system
         : ScreenBrightnessPlatform.instance.application;
     future.then((res) {
-      if (mounted) _brightnessValue.value = res;
+      if (mounted) _player.brightness.value = res;
     }).catchError((_) {});
   }
 
   Future<void> _setBrightness(double value) async {
     final clamped = value.clamp(0.0, 1.0);
-    _brightnessValue.value = clamped;
+    _player.brightness.value = clamped;
     try {
       if (Platform.isIOS || _player.setSystemBrightness) {
         await ScreenBrightnessPlatform.instance.setSystemScreenBrightness(
@@ -246,7 +244,7 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
 
     if (_sideGesture == .left) {
       final level = size.height * 3;
-      final next = _brightnessValue.value - moveDelta.dy / level;
+      final next = _player.brightness.value - moveDelta.dy / level;
       _setBrightness(next);
       _initialFocalPoint = event.localPosition;
       return;
@@ -565,7 +563,7 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
             children: [
 
               Obx(() {
-                final v = _brightnessValue.value;
+                final v = _player.brightness.value;
                 final icon = v < 1.0 / 3.0
                     ? Icons.brightness_low
                     : v < 2.0 / 3.0
@@ -722,7 +720,7 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
       child: Align(
         alignment: Alignment.center,
         child: Obx(() {
-          final v = _brightnessValue.value;
+          final v = _player.brightness.value;
           final icon = v < 1.0 / 3.0
               ? Icons.brightness_low
               : v < 2.0 / 3.0
@@ -900,5 +898,6 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
 }
 
 enum _SideGesture { left, right }
+
 
 
