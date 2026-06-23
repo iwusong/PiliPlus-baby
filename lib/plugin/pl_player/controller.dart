@@ -1249,7 +1249,67 @@ class PlPlayerController with BlockConfigMixin {
   Timer? volumeTimer;
   bool volumeInterceptEventStream = false;
 
+  final RxBool brightnessIndicator = false.obs;
+  Timer? brightnessTimer;
+
   static final double maxVolume = PlatformUtils.isDesktop ? 2.0 : 1.0;
+  static final controlsLocked = false.obs;
+
+  static void toggleControlsLock() {
+    controlsLocked.value = !controlsLocked.value;
+  }
+
+  static void disposeIfExists() {
+    _instance?.dispose();
+  }
+
+  static void adjustVolumeIfExists(double delta) {
+    final inst = _instance;
+    if (inst == null) return;
+    final next = (inst.volume.value + delta).clamp(0.0, maxVolume);
+    inst.setVolume(next);
+  }
+
+  static Future<void> adjustBrightnessIfExists(double delta) async {
+    final inst = _instance;
+    if (inst == null) return;
+    final next = (inst.brightness.value + delta).clamp(0.0, 1.0);
+    try {
+      if (Platform.isIOS || inst.setSystemBrightness) {
+        await ScreenBrightnessPlatform.instance.setSystemScreenBrightness(next);
+      } else {
+        await ScreenBrightnessPlatform.instance.setApplicationScreenBrightness(next);
+      }
+    } catch (_) {}
+    inst.brightness.value = next;
+    inst.brightnessIndicator.value = true;
+    inst.brightnessTimer?.cancel();
+    inst.brightnessTimer = Timer(const Duration(milliseconds: 200), () {
+      inst.brightnessIndicator.value = false;
+    });
+  }
+
+  static const _speedOptions = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+
+  static void adjustSpeedIfExists(bool up) {
+    final inst = _instance;
+    if (inst == null) return;
+    final current = inst.playbackSpeed;
+    final idx = _speedOptions.indexOf(current);
+    final nextIdx = up
+        ? ((idx + 1).clamp(0, _speedOptions.length - 1))
+        : ((idx - 1).clamp(0, _speedOptions.length - 1));
+    inst.setPlaybackSpeed(_speedOptions[nextIdx]);
+  }
+
+  static void setSpeedByIndex(int idx) {
+    final inst = _instance;
+    if (inst == null) return;
+    if (idx >= 0 && idx < _speedOptions.length) {
+      inst.setPlaybackSpeed(_speedOptions[idx]);
+    }
+  }
+
   Future<void> setVolume(double volume, {bool showIndicator = true}) async {
     if (this.volume.value != volume) {
       this.volume.value = volume;
