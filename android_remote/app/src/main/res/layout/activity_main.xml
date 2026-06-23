@@ -1,148 +1,634 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FF121212"
-    android:padding="16dp">
+    android:background="@drawable/bg_page">
 
-    <TextView
-        android:id="@+id/title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="PiliPlus 遥控器"
-        android:textColor="#FF00A1D6"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/connTitle"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="未连接"
-        android:textColor="#88FFFFFF"
-        android:textSize="14sp"
-        app:layout_constraintStart_toStartOf="@id/title"
-        app:layout_constraintTop_toBottomOf="@id/title" />
-
-    <!-- Scan section -->
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/scanSection"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/connTitle"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.1">
+        android:id="@+id/rootLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="56dp"
+        android:paddingBottom="24dp">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/deviceList"
+        <LinearLayout
+            android:id="@+id/header"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <View
+                android:id="@+id/statusDot"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_marginEnd="12dp"
+                android:background="@drawable/bg_dot_idle" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="PiliPlus"
+                    android:textColor="#FF1A2332"
+                    android:textSize="28sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/connTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="..."
+                    android:textColor="#FF6B7B8D"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Scan -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/scanSection"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_marginTop="16dp"
-            app:layout_constraintBottom_toTopOf="@+id/scanBtn"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/emptyHint"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="搜索以 'dudutv' 开头的设备..."
-            android:textColor="#44FFFFFF"
-            android:textSize="14sp"
-            app:layout_constraintBottom_toBottomOf="@id/deviceList"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@id/deviceList" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/scanBtn"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="0dp"
-            android:layout_height="52dp"
-            android:layout_marginBottom="16dp"
-            android:text="开始扫描"
-            android:textSize="16sp"
-            app:cornerRadius="12dp"
+            android:layout_marginTop="20dp"
+            android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/header">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/deviceList"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:clipToPadding="false"
+                android:paddingBottom="88dp"
+                app:layout_constraintBottom_toTopOf="@+id/scanBtn"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <LinearLayout
+                android:id="@+id/emptyHint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="@id/deviceList"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@id/deviceList">
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
+                    app:cardBackgroundColor="#E0FFFFFF"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="未发现设备"
+                    android:textColor="#FF6B7B8D"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="搜索以 dudutv 开头的设备"
+                    android:textColor="#FF9AABBB"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/scanBtn"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                app:cardBackgroundColor="#FF0066CC"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="8dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="开始扫描"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </androidx.cardview.widget.CardView>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- Control -->
+        <ScrollView
+            android:id="@+id/controlSection"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginTop="20dp"
+            android:fillViewport="true"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/header">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <!-- Connected -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    app:cardBackgroundColor="#FFFFFFFF"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="6dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
+
+                        <View
+                            android:layout_width="12dp"
+                            android:layout_height="12dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="@drawable/bg_dot_active" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/connectedDeviceLabel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="#FF1A2332"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="已通过 BLE 连接"
+                                android:textColor="#FF6B7B8D"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/connectedBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_card_item"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="5dp"
+                            android:text="在线"
+                            android:textColor="#FF00B37E"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Pause / Play -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="80dp"
+                    android:layout_marginBottom="16dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/glassPause"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="#FFFFFFFF"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="4dp">
+
+                        <LinearLayout
+                            android:id="@+id/btnPause"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:background="?attr/selectableItemBackground"
+                            android:padding="8dp">
+
+                            <ImageView
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:src="@android:drawable/ic_media_pause"
+                                app:tint="#FF0066CC" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="暂停"
+                                android:textColor="#FF1A2332"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </androidx.cardview.widget.CardView>
+
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/glassResume"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="#FFFFFFFF"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="4dp">
+
+                        <LinearLayout
+                            android:id="@+id/btnResume"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:background="?attr/selectableItemBackground"
+                            android:padding="8dp">
+
+                            <ImageView
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:src="@android:drawable/ic_media_play"
+                                app:tint="#FF0066CC" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="播放"
+                                android:textColor="#FF1A2332"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </androidx.cardview.widget.CardView>
+                </LinearLayout>
+
+                <!-- Battery / Lock row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginBottom="16dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="#FFF0F2F5"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="3dp">
+
+                        <TextView
+                            android:id="@+id/btnBatteryOut"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:background="?attr/selectableItemBackground"
+                            android:text="电量耗尽"
+                            android:textColor="#FF455A64"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </androidx.cardview.widget.CardView>
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginHorizontal="6dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="#FFF0F2F5"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="3dp">
+
+                        <LinearLayout
+                            android:id="@+id/btnLockScreen"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:background="?attr/selectableItemBackground"
+                            android:padding="4dp">
+
+                            <ImageView
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:src="@android:drawable/ic_lock_lock"
+                                app:tint="#FF78909C" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="锁屏"
+                                android:textColor="#FF455A64"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </androidx.cardview.widget.CardView>
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="#FFF0F2F5"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="3dp">
+
+                        <LinearLayout
+                            android:id="@+id/btnToggleLock"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:background="?attr/selectableItemBackground"
+                            android:padding="4dp">
+
+                            <ImageView
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:src="@android:drawable/ic_lock_idle_lock"
+                                app:tint="#FF78909C" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="UI锁"
+                                android:textColor="#FF455A64"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </androidx.cardview.widget.CardView>
+                </LinearLayout>
+
+                <!-- Volume / Brightness row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginBottom="12dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="#FFF0F2F5"
+                        app:cardCornerRadius="10dp"
+                        app:cardElevation="2dp">
+
+                        <TextView
+                            android:id="@+id/btnVolDown"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:background="?attr/selectableItemBackground"
+                            android:text="音量-"
+                            android:textColor="#FF455A64"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </androidx.cardview.widget.CardView>
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginHorizontal="4dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="#FFF0F2F5"
+                        app:cardCornerRadius="10dp"
+                        app:cardElevation="2dp">
+
+                        <TextView
+                            android:id="@+id/btnVolUp"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:background="?attr/selectableItemBackground"
+                            android:text="音量+"
+                            android:textColor="#FF455A64"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </androidx.cardview.widget.CardView>
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginHorizontal="4dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="#FFF0F2F5"
+                        app:cardCornerRadius="10dp"
+                        app:cardElevation="2dp">
+
+                        <TextView
+                            android:id="@+id/btnBriDown"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:background="?attr/selectableItemBackground"
+                            android:text="亮度-"
+                            android:textColor="#FF455A64"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </androidx.cardview.widget.CardView>
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="#FFF0F2F5"
+                        app:cardCornerRadius="10dp"
+                        app:cardElevation="2dp">
+
+                        <TextView
+                            android:id="@+id/btnBriUp"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:background="?attr/selectableItemBackground"
+                            android:text="亮度+"
+                            android:textColor="#FF455A64"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </androidx.cardview.widget.CardView>
+                </LinearLayout>
+
+                <!-- Speed row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:layout_marginBottom="16dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btnSpd05"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="3dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_secondary_btn"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:text="0.5x"
+                        android:textColor="#FF455A64"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btnSpd075"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginHorizontal="3dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_secondary_btn"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:text="0.75x"
+                        android:textColor="#FF455A64"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btnSpd1"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginHorizontal="3dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_secondary_btn"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:text="1x"
+                        android:textColor="#FF455A64"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btnSpd125"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginHorizontal="3dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_secondary_btn"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:text="1.25x"
+                        android:textColor="#FF455A64"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btnSpd15"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginHorizontal="3dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_secondary_btn"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:text="1.5x"
+                        android:textColor="#FF455A64"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btnSpd2"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginStart="3dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_secondary_btn"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:text="2x"
+                        android:textColor="#FF455A64"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDisconnect"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="200dp"
+                    android:layout_height="48dp"
+                    android:text="断开连接"
+                    android:textColor="#FF90A4AE"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+        </ScrollView>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Control section -->
-    <LinearLayout
-        android:id="@+id/controlSection"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/connTitle">
+    <TextView
+        android:id="@+id/versionLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="12dp"
+        android:textColor="#44B0C4DE"
+        android:textSize="10sp" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnBatteryOut"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="200dp"
-            android:layout_height="56dp"
-            android:layout_marginBottom="12dp"
-            android:text="电量耗尽"
-            android:textSize="16sp"
-            app:cornerRadius="12dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnPause"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="200dp"
-            android:layout_height="56dp"
-            android:layout_marginBottom="12dp"
-            android:icon="@android:drawable/ic_media_pause"
-            android:text="  暂停视频"
-            android:textSize="16sp"
-            app:cornerRadius="12dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnResume"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="200dp"
-            android:layout_height="56dp"
-            android:layout_marginBottom="12dp"
-            android:icon="@android:drawable/ic_media_play"
-            android:text="  继续播放"
-            android:textSize="16sp"
-            app:cornerRadius="12dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnLockScreen"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="200dp"
-            android:layout_height="56dp"
-            android:icon="@android:drawable/ic_lock_lock"
-            android:text="  锁屏"
-            android:textSize="16sp"
-            app:cornerRadius="12dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnDisconnect"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="200dp"
-            android:layout_height="48dp"
-            android:layout_marginTop="32dp"
-            android:text="断开连接"
-            android:textColor="#FF555555"
-            android:textSize="14sp" />
-
-    </LinearLayout>
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</FrameLayout>

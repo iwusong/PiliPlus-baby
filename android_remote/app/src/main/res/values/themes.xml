@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.PiliPlusRemote" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="colorPrimary">@color/primary</item>
-        <item name="colorOnPrimary">@color/on_primary</item>
-        <item name="colorPrimaryContainer">@color/primary_container</item>
-        <item name="colorOnPrimaryContainer">@color/on_primary_container</item>
+    <style name="Theme.PiliPlusRemote" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">#FF00A1D6</item>
+        <item name="colorOnPrimary">#FFFFFFFF</item>
+        <item name="colorPrimaryContainer">#FFCCEBF5</item>
+        <item name="colorOnPrimaryContainer">#FF003349</item>
+        <item name="android:navigationBarColor">#FFF5F7FA</item>
     </style>
 
     <color name="primary">#FF00A1D6</color>
     <color name="on_primary">#FFFFFFFF</color>
-    <color name="primary_container">#FF0D2E4A</color>
-    <color name="on_primary_container">#FFE6F4FA</color>
+    <color name="primary_container">#FFE6F4FA</color>
+    <color name="on_primary_container">#FF0D2E4A</color>
 </resources>

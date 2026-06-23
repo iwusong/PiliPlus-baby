@@ -80,6 +80,15 @@ class BleController(
         )
     }
 
+    @SuppressLint("MissingPermission")
+    fun sendSpeed(idx: Byte) {
+        val char = commandChar ?: return
+        val data = byteArrayOf(0xAA.toByte(), 0x09, 0x50, 0x49, idx)
+        bluetoothGatt?.writeCharacteristic(
+            char, data, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+        )
+    }
+
     fun close() {
         disconnect()
         stopScan()

@@ -11,7 +11,7 @@ android {
         applicationId = "com.dudutv.remote"
         minSdk = 31
         targetSdk = 35
-        versionCode = 1
+        versionCode = (System.currentTimeMillis() / 1000).toInt()
         versionName = "1.0"
     }
 

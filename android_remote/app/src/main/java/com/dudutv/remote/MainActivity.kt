@@ -9,7 +9,10 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -17,9 +20,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.transition.AutoTransition
+import androidx.transition.TransitionManager
 import com.dudutv.remote.databinding.ActivityMainBinding
 import com.dudutv.remote.databinding.ItemDeviceBinding
 import kotlinx.coroutines.flow.collectLatest
@@ -50,6 +54,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        val pkgInfo = packageManager.getPackageInfo(packageName, 0)
+        binding.versionLabel.text = "build ${pkgInfo.versionCode}"
 
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
@@ -113,9 +120,6 @@ class MainActivity : ComponentActivity() {
 
     private fun setupRecyclerView() {
         binding.deviceList.layoutManager = LinearLayoutManager(this)
-        binding.deviceList.addItemDecoration(
-            DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
-        )
         binding.deviceList.adapter = DeviceAdapter { device ->
             bleController.connect(device)
         }
@@ -136,6 +140,17 @@ class MainActivity : ComponentActivity() {
         binding.btnPause.setOnClickListener { bleController.sendCommand(0x01) }
         binding.btnLockScreen.setOnClickListener { bleController.sendCommand(0x02) }
         binding.btnResume.setOnClickListener { bleController.sendCommand(0x03) }
+        binding.btnToggleLock.setOnClickListener { bleController.sendCommand(0x04) }
+        binding.btnVolDown.setOnClickListener { bleController.sendCommand(0x05) }
+        binding.btnVolUp.setOnClickListener { bleController.sendCommand(0x06) }
+        binding.btnBriDown.setOnClickListener { bleController.sendCommand(0x07) }
+        binding.btnBriUp.setOnClickListener { bleController.sendCommand(0x08) }
+        binding.btnSpd05.setOnClickListener { bleController.sendSpeed(0) }
+        binding.btnSpd075.setOnClickListener { bleController.sendSpeed(1) }
+        binding.btnSpd1.setOnClickListener { bleController.sendSpeed(2) }
+        binding.btnSpd125.setOnClickListener { bleController.sendSpeed(3) }
+        binding.btnSpd15.setOnClickListener { bleController.sendSpeed(4) }
+        binding.btnSpd2.setOnClickListener { bleController.sendSpeed(5) }
         binding.btnDisconnect.setOnClickListener {
             autoConnected = false
             bleController.disconnect()
@@ -147,19 +162,38 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collectLatest { state ->
-                    (binding.deviceList.adapter as DeviceAdapter).submitList(state.devices)
+                    val adapter = binding.deviceList.adapter as DeviceAdapter
+                    adapter.submitList(state.devices)
+
+                    val hasDevices = state.devices.isNotEmpty()
+                    binding.emptyHint.visibility = if (hasDevices) View.GONE else View.VISIBLE
+
+                    val root = binding.rootLayout
+                    TransitionManager.beginDelayedTransition(
+                        root,
+                        AutoTransition().apply {
+                            duration = 300
+                            interpolator = AccelerateDecelerateInterpolator()
+                        }
+                    )
 
                     if (state.isConnected) {
-                        binding.scanSection.visibility = android.view.View.GONE
-                        binding.controlSection.visibility = android.view.View.VISIBLE
+                        binding.scanSection.visibility = View.GONE
+                        binding.controlSection.visibility = View.VISIBLE
+                        binding.statusDot.visibility = View.VISIBLE
+                        binding.statusDot.setBackgroundResource(R.drawable.bg_dot_active)
                         binding.connTitle.text = state.connectedDevice ?: "已连接"
+                        binding.connectedDeviceLabel.text = state.connectedDevice ?: "已连接"
                     } else {
-                        binding.scanSection.visibility = android.view.View.VISIBLE
-                        binding.controlSection.visibility = android.view.View.GONE
-                        binding.connTitle.text = "未连接"
+                        binding.scanSection.visibility = View.VISIBLE
+                        binding.controlSection.visibility = View.GONE
+                        binding.statusDot.visibility = View.VISIBLE
+                        binding.statusDot.setBackgroundResource(R.drawable.bg_dot_idle)
+                        binding.connTitle.text = if (state.isScanning) "搜索中..." else "就绪"
                     }
 
-                    binding.scanBtn.text = if (state.isScanning) "扫描中..." else "开始扫描"
+                    val btnText = binding.scanBtn.getChildAt(0) as? TextView
+                    btnText?.text = if (state.isScanning) "停止扫描" else "开始扫描"
                 }
             }
         }
@@ -167,7 +201,7 @@ class MainActivity : ComponentActivity() {
 
     private class DeviceAdapter(
         private val onClick: (android.bluetooth.le.ScanResult) -> Unit
-    ) : androidx.recyclerview.widget.RecyclerView.Adapter<DeviceAdapter.ViewHolder>() {
+    ) : RecyclerView.Adapter<DeviceAdapter.ViewHolder>() {
 
         private var items = listOf<android.bluetooth.le.ScanResult>()
 
@@ -186,9 +220,10 @@ class MainActivity : ComponentActivity() {
         override fun onBindViewHolder(holder: ViewHolder, pos: Int) {
             val r = items[pos]
             val name = r.device.name ?: "Unknown"
-            val rssi = r.rssi
             holder.binding.deviceName.text = name
-            holder.binding.deviceAddr.text = "${r.device.address}  RSSI: $rssi dBm"
+            holder.binding.deviceAddr.text = r.device.address
+            holder.binding.deviceRssi.text = "${r.rssi} dBm"
+            holder.binding.signalBars.rssi = r.rssi
             holder.binding.root.setOnClickListener { onClick(r) }
         }
 
