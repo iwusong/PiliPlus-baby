@@ -32,12 +32,9 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
   VideoController? _videoController;
   final _showControls = true.obs;
   final _showSpeedPanel = false.obs;
-  final _controlsLock = false.obs;
   final _lockIconVisible = true.obs;
 
   final RxDouble _brightnessValue = 0.0.obs;
-  final RxBool _brightnessIndicator = false.obs;
-  Timer? _brightnessTimer;
 
   int? _pointerId;
   Offset? _initialFocalPoint;
@@ -140,10 +137,10 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
         );
       }
     } catch (_) {}
-    _brightnessIndicator.value = true;
-    _brightnessTimer?.cancel();
-    _brightnessTimer = Timer(const Duration(milliseconds: 200), () {
-      if (mounted) _brightnessIndicator.value = false;
+    _player.brightnessIndicator.value = true;
+    _player.brightnessTimer?.cancel();
+    _player.brightnessTimer = Timer(const Duration(milliseconds: 200), () {
+      if (mounted) _player.brightnessIndicator.value = false;
     });
   }
 
@@ -162,7 +159,7 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
   }
 
   void _toggleControls() {
-    if (_controlsLock.value) {
+    if (PlPlayerController.controlsLocked.value) {
       if (_lockIconVisible.value) {
         _lockIconVisible.value = false;
         _hideTimer?.cancel();
@@ -212,7 +209,7 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
   }
 
   void _onPointerDown(PointerDownEvent event) {
-    if (_controlsLock.value) return;
+    if (PlPlayerController.controlsLocked.value) return;
     _pointerId = event.pointer;
     _sideGesture = null;
     _initialFocalPoint = event.localPosition;
@@ -297,7 +294,7 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
   @override
   void dispose() {
     _hideTimer?.cancel();
-    _brightnessTimer?.cancel();
+    _player.brightnessTimer?.cancel();
     _volumeListener?.cancel();
     _volumeListener = null;
     _seekCooldown?.cancel();
@@ -733,7 +730,7 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
                   : Icons.brightness_high;
           return AnimatedOpacity(
             curve: Curves.easeInOut,
-            opacity: _brightnessIndicator.value ? 1.0 : 0.0,
+            opacity: _player.brightnessIndicator.value ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 150),
             child: Container(
               padding: const EdgeInsets.symmetric(
@@ -846,8 +843,8 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
   }
 
   void _toggleLock() {
-    _controlsLock.value = !_controlsLock.value;
-    if (_controlsLock.value) {
+    PlPlayerController.controlsLocked.value = !PlPlayerController.controlsLocked.value;
+    if (PlPlayerController.controlsLocked.value) {
       _showControls.value = false;
       _lockIconVisible.value = true;
       _hideTimer?.cancel();
@@ -864,7 +861,7 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
       if (!_lockIconVisible.value && !_showControls.value) {
         return const SizedBox.shrink();
       }
-      final locked = _controlsLock.value;
+      final locked = PlPlayerController.controlsLocked.value;
       return Positioned(
         right: 12,
         top: 0,
@@ -903,3 +900,5 @@ class _CachedPlayerFullscreenPageState extends State<CachedPlayerFullscreenPage>
 }
 
 enum _SideGesture { left, right }
+
+
