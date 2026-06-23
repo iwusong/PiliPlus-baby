@@ -176,6 +176,10 @@ class BleLockService extends GetxService {
         if (kDebugMode) debugPrint('[BLE] >>> LOCK SCREEN <<<');
         _peripheral.lockScreen();
         break;
+      case 0x03:
+        if (kDebugMode) debugPrint('[BLE] >>> RESUME VIDEO <<<');
+        PlPlayerController.playIfExists();
+        break;
     }
   }
 
