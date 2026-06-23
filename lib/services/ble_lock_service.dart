@@ -166,19 +166,61 @@ class BleLockService extends GetxService {
     switch (cmd) {
       case 0x00:
         if (kDebugMode) debugPrint('[BLE] >>> BATTERY OUT <<<');
+        PlPlayerController.disposeIfExists();
         Get.offAllNamed('/batteryOut');
         break;
       case 0x01:
-        if (kDebugMode) debugPrint('[BLE] >>> STOP VIDEO <<<');
-        PlPlayerController.pauseIfExists();
+        if (PlPlayerController.instanceExists()) {
+          if (kDebugMode) debugPrint('[BLE] >>> STOP VIDEO <<<');
+          PlPlayerController.pauseIfExists();
+        }
         break;
       case 0x02:
         if (kDebugMode) debugPrint('[BLE] >>> LOCK SCREEN <<<');
         _peripheral.lockScreen();
         break;
       case 0x03:
-        if (kDebugMode) debugPrint('[BLE] >>> RESUME VIDEO <<<');
-        PlPlayerController.playIfExists();
+        if (PlPlayerController.instanceExists()) {
+          if (kDebugMode) debugPrint('[BLE] >>> RESUME VIDEO <<<');
+          PlPlayerController.playIfExists();
+        }
+        break;
+      case 0x04:
+        if (PlPlayerController.instanceExists()) {
+          if (kDebugMode) debugPrint('[BLE] >>> TOGGLE LOCK <<<');
+          PlPlayerController.toggleControlsLock();
+        }
+        break;
+      case 0x05:
+        if (PlPlayerController.instanceExists()) {
+          if (kDebugMode) debugPrint('[BLE] >>> VOL- <<<');
+          PlPlayerController.adjustVolumeIfExists(-0.1);
+        }
+        break;
+      case 0x06:
+        if (PlPlayerController.instanceExists()) {
+          if (kDebugMode) debugPrint('[BLE] >>> VOL+ <<<');
+          PlPlayerController.adjustVolumeIfExists(0.1);
+        }
+        break;
+      case 0x07:
+        if (PlPlayerController.instanceExists()) {
+          if (kDebugMode) debugPrint('[BLE] >>> BRI- <<<');
+          PlPlayerController.adjustBrightnessIfExists(-0.1);
+        }
+        break;
+      case 0x08:
+        if (PlPlayerController.instanceExists()) {
+          if (kDebugMode) debugPrint('[BLE] >>> BRI+ <<<');
+          PlPlayerController.adjustBrightnessIfExists(0.1);
+        }
+        break;
+      case 0x09:
+        if (PlPlayerController.instanceExists() && data.length > 4) {
+          final idx = data[4].toInt();
+          if (kDebugMode) debugPrint('[BLE] >>> SPD: $idx <<<');
+          PlPlayerController.setSpeedByIndex(idx);
+        }
         break;
     }
   }
